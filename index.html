@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>MCCS Model Plant Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -214,6 +217,16 @@ let DATA = FALLBACK_DATA;
 const AREAS = ['Overall','PL','SA','RE','OL','LB','PW','TF','RC'];
 let currentArea = 'Overall', currentMenu = 'overview', sortCol = -1, sortDir = 1;
 
+// ===== LOCALSTORAGE: RESTORE SAVED DATA =====
+try {
+  const saved = localStorage.getItem('mccs_dashboard_data');
+  const savedDate = localStorage.getItem('mccs_upload_date');
+  if (saved) {
+    DATA = JSON.parse(saved);
+    if (savedDate) window._uploadDate = new Date(savedDate);
+  }
+} catch(e) { console.warn('localStorage restore failed:', e); }
+
 // Area mapping from Excel
 const AREA_MAP = {"AB":"OL","ABS1":"SA","ABS2":"SA","ABS3":"SA","ADU1":"RE","ADU2":"RE","BDE":"OL","BGSB":"SA","BTX":"OL","C42P":"OL","CCM":"SA","CD1":"PL","CLD1":"OL","CLD2":"OL","CP":"PL","DCC":"RE","EBSM":"LB","EPS":"SA","ERU":"RC","ETP":"OL","HD":"PL","HOT":"OL","HSU":"RC","IP":"PL","LCA":"TF","LCP":"TF","LDU":"LB","LTU":"LB","LUBE":"LB","LUT":"LB","NANO":"SA","NTU":"RE","PP12":"PL","PP34":"PL","RHU":"RC","PPC":"PL","PPDT":"SA","PS":"SA","PSUQ":"SA","PW":"PW","PWP1":"PW","PWP2":"PW","PWP3":"PW","QC21":"PL","RD":"PL","RDCC":"RC","RYD":"RE","SAN1":"SA","SAN2":"SA","SAN3":"SA","SRU":"RE","TF1":"TF","TF2":"TF","TFL":"LB","UHPE":"PL","UT1":"PL","UT2":"RE","UT4":"OL","UTF":"RC","VGOH":"RE","WH41":"SA","WH43":"SA","WT":"RE"};
 
@@ -228,7 +241,8 @@ const NOW = new Date();
 function updateHeaderDate(d) {
   document.getElementById('headerDate').textContent = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
 }
-updateHeaderDate(NOW);
+// Show saved upload date if available, else today
+updateHeaderDate(window._uploadDate || NOW);
 
 // ===== BUILD TABS =====
 const tabContainer = document.getElementById('areaTabs');
@@ -360,6 +374,12 @@ function handleFileUpload(file) {
       });
       
       DATA = newData;
+      // Save to localStorage so data persists after browser close
+      try {
+        localStorage.setItem('mccs_dashboard_data', JSON.stringify(newData));
+        localStorage.setItem('mccs_upload_date', today.toISOString());
+        window._uploadDate = today;
+      } catch(e) { console.warn('localStorage save failed:', e); }
       setProgress(100);
       
       const fname = file.name;
